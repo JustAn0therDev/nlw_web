@@ -1,6 +1,6 @@
-import React, { useState, useEffect, ChangeEvent } from 'react';
+import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import './CreatePoint.css';
-import { Link } from 'react-router-dom';
+import { Link, useHistory } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
 import { Map, TileLayer, Marker } from 'react-leaflet';
 import { LeafletMouseEvent } from 'leaflet';
@@ -10,7 +10,7 @@ import api from '../../services/api';
 import Logo from '../../assets/logo.svg';
 
 interface Item {
-    id: Number;
+    id: number;
     title: String;
     image: String;
 }
@@ -31,8 +31,15 @@ const CreatePoint = () => {
 
     const [initialPosition, setInitialPosition] = useState<[number, number]>([0, 0]);
 
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        whatsapp: ''
+    })
+
     const [selectedUf, setSelectedUf] = useState('');
     const [selectedCity, setSelectedCity] = useState('');
+    const [selectedItems, setSelectedItems] = useState<number[]>([]);
     const [selectedPosition, setSelectedPosition] = useState<[number, number]>([0, 0]);
 
     useEffect(() => {
@@ -42,6 +49,8 @@ const CreatePoint = () => {
             setInitialPosition([latitude, longitude]);
         })
     }, []);
+
+    const history = useHistory();
 
     useEffect(() => {
         api.get('items')
@@ -83,6 +92,47 @@ const CreatePoint = () => {
         setSelectedCity(event.target.value);
     }
 
+    function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
+        setFormData({ ...formData, [event.target.name]: event.target.value });
+    }
+
+    function handleSelectItem(id: number) {
+        let currentSelectedItems: number[] = selectedItems;
+        let indexOfId = currentSelectedItems.findIndex(item => item === id);
+
+        if (indexOfId > -1) {
+            currentSelectedItems = currentSelectedItems.filter(item => item !== id);
+            setSelectedItems(currentSelectedItems);
+        } else {
+            setSelectedItems([...selectedItems, id]);
+        }
+    }
+
+    async function handleSubmit(event: FormEvent) {
+        event.preventDefault();
+
+        const { name, email, whatsapp } = formData;
+        const uf = selectedUf;
+        const city = selectedCity;
+        const [ latitude, longitude ] = selectedPosition;
+        const items = selectedItems;
+
+        const data = {
+            name, 
+            email,
+            whatsapp,
+            uf,
+            city,
+            latitude,
+            longitude,
+            items
+        }
+
+        await api.post('points', data).then(response => alert(response.data.message)).catch(error => alert(error));
+        
+        history.push('/');
+    }
+
     return (
         <div id="page-create-point">
             <header>
@@ -94,7 +144,7 @@ const CreatePoint = () => {
                 </Link>
             </header>
 
-            <form action="">
+            <form onSubmit={handleSubmit}>
                 <h1>Cadastro do <br /> ponto de coleta</h1>
 
                 <fieldset>
@@ -108,6 +158,7 @@ const CreatePoint = () => {
                             id="name" 
                             name="name" 
                             type="text"
+                            onChange={handleInputChange}
                         />
                     </div>
                     <div className="field">
@@ -116,6 +167,7 @@ const CreatePoint = () => {
                             id="email" 
                             name="email" 
                             type="text"
+                            onChange={handleInputChange}
                         />
                     </div>
                     <div className="field">
@@ -124,6 +176,7 @@ const CreatePoint = () => {
                             id="whatsapp" 
                             name="whatsapp" 
                             type="text"
+                            onChange={handleInputChange}
                         />
                     </div>
                 </fieldset>
@@ -174,7 +227,10 @@ const CreatePoint = () => {
                     <ul className="items-grid">
                         {items.map(item => 
                             (
-                                <li key={String(item.id)}>
+                                <li key={String(item.id)} 
+                                onClick={(ev) => { ev.stopPropagation(); handleSelectItem(item.id) }} 
+                                className={selectedItems.includes(item.id) ? 'selected' : ''}
+                                >
                                     <img src={String(item.image)} alt={String(item.title)}/>
                                     <span>{String(item.title)}</span>
                                 </li>
