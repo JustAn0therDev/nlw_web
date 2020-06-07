@@ -1,9 +1,12 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import './CreatePoint.css';
+
 import { Link, useHistory } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
 import { Map, TileLayer, Marker } from 'react-leaflet';
 import { LeafletMouseEvent } from 'leaflet';
+import { IBGECityResponse, IBGEUFResponse } from '../../interfaces/IBGEInterfaces';
+
 import axios from 'axios';
 import api from '../../services/api';
 
@@ -13,14 +16,6 @@ interface Item {
     id: number;
     title: String;
     image: String;
-}
-
-interface IBGEUFResponse {
-    sigla: String;
-}
-
-interface IBGECityResponse {
-    nome: String;
 }
 
 const CreatePoint = () => {
